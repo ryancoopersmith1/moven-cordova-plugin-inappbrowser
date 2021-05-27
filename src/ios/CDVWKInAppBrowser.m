@@ -1092,16 +1092,27 @@ BOOL isExiting = FALSE;
 
 - (void)navigateTo:(NSURL*)url
 {
-    NSURLRequest* request = [NSURLRequest requestWithURL:url];
-    
     if (_userAgentLockToken != 0) {
-        [self.webView loadRequest:request];
+        if ([url.scheme isEqualToString:@"file"]) {
+            NSURL* directoryURL = [url URLByDeletingLastPathComponent];
+            [self.webView loadFileURL:url allowingReadAccessToURL:directoryURL];
+        } else {
+            NSURLRequest* request = [NSURLRequest requestWithURL:url];
+            [self.webView loadRequest:request];
+        }
     } else {
         __weak CDVWKInAppBrowserViewController* weakSelf = self;
         [CDVUserAgentUtil acquireLock:^(NSInteger lockToken) {
             _userAgentLockToken = lockToken;
             [CDVUserAgentUtil setUserAgent:_userAgent lockToken:lockToken];
-            [weakSelf.webView loadRequest:request];
+
+            if ([url.scheme isEqualToString:@"file"]) {
+                NSURL* directoryURL = [url URLByDeletingLastPathComponent];
+                [weakSelf.webView loadFileURL:url allowingReadAccessToURL:directoryURL];
+            } else {
+                NSURLRequest* request = [NSURLRequest requestWithURL:url];
+                [weakSelf.webView loadRequest:request];
+            }
         }];
     }
 }
